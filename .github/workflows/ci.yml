@@ -47,7 +47,7 @@ jobs:
       DB_USERNAME: hospital
       DB_PASSWORD: ci_test_password
 
-      JWT_SECRET: ci_only_secret_key_for_hospital_api_tests_2026
+      JWT_SECRET: Y2lfdGVzdF9qd3Rfc2VjcmV0X2tleV9hdF9sZWFzdF8zMl9ieXRlcw==
       JWT_EXPIRATION_MS: 900000
       JWT_ISSUER: hospital-api
 
