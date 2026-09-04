@@ -21,9 +21,41 @@ concurrency:
 jobs:
   test:
     name: Build and test
-
     runs-on: ubuntu-latest
     timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:18.4-alpine
+
+        env:
+          POSTGRES_DB: hospital
+          POSTGRES_USER: hospital
+          POSTGRES_PASSWORD: ci_test_password
+
+        ports:
+          - 5432:5432
+
+        options: >-
+          --health-cmd "pg_isready -U hospital -d hospital"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DB_URL: jdbc:postgresql://localhost:5432/hospital?currentSchema=public
+      DB_USERNAME: hospital
+      DB_PASSWORD: ci_test_password
+
+      JWT_SECRET: ci_only_secret_key_for_hospital_api_tests_2026
+      JWT_EXPIRATION_MS: 900000
+      JWT_ISSUER: hospital-api
+
+      CORS_ALLOWED_ORIGINS: http://localhost:5173
+
+      LOGIN_MAX_ATTEMPTS: 5
+      LOGIN_ATTEMPT_WINDOW_MS: 900000
+      LOGIN_BLOCK_DURATION_MS: 900000
 
     steps:
       - name: Checkout repository
