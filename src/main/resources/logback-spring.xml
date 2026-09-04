@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration>
+
+    <!-- ===================================== -->
+    <!-- DEVELOPMENT                           -->
+    <!-- ===================================== -->
+
+    <springProfile name="dev">
+
+        <property
+                name="DEV_PATTERN"
+                value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{40} - %msg%n%ex"/>
+
+        <appender
+                name="DEV_CONSOLE"
+                class="ch.qos.logback.core.ConsoleAppender">
+
+            <encoder>
+                <charset>UTF-8</charset>
+                <pattern>${DEV_PATTERN}</pattern>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="DEV_CONSOLE"/>
+        </root>
+
+        <logger
+                name="com.hospital.gestion"
+                level="DEBUG"/>
+
+        <logger
+                name="org.hibernate.SQL"
+                level="DEBUG"/>
+
+        <logger
+                name="org.springframework.security"
+                level="INFO"/>
+
+    </springProfile>
+
+
+    <!-- ===================================== -->
+    <!-- TEST                                  -->
+    <!-- ===================================== -->
+
+    <springProfile name="test">
+
+        <property
+                name="TEST_PATTERN"
+                value="%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n%ex"/>
+
+        <appender
+                name="TEST_CONSOLE"
+                class="ch.qos.logback.core.ConsoleAppender">
+
+            <encoder>
+                <charset>UTF-8</charset>
+                <pattern>${TEST_PATTERN}</pattern>
+            </encoder>
+        </appender>
+
+        <root level="WARN">
+            <appender-ref ref="TEST_CONSOLE"/>
+        </root>
+
+        <logger
+                name="com.hospital.gestion"
+                level="INFO"/>
+
+        <logger
+                name="org.testcontainers"
+                level="INFO"/>
+
+    </springProfile>
+
+
+    <!-- ===================================== -->
+    <!-- PRODUCTION                            -->
+    <!-- ===================================== -->
+
+    <springProfile name="prod">
+
+        <springProperty
+                scope="context"
+                name="ROOT_LOG_LEVEL"
+                source="ROOT_LOG_LEVEL"
+                defaultValue="INFO"/>
+
+        <springProperty
+                scope="context"
+                name="APP_LOG_LEVEL"
+                source="APP_LOG_LEVEL"
+                defaultValue="INFO"/>
+
+        <property
+                name="PROD_PATTERN"
+                value="%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} level=%-5level thread=%thread logger=%logger{40} message=%msg%n%ex"/>
+
+        <appender
+                name="PROD_CONSOLE"
+                class="ch.qos.logback.core.ConsoleAppender">
+
+            <encoder>
+                <charset>UTF-8</charset>
+                <pattern>${PROD_PATTERN}</pattern>
+            </encoder>
+        </appender>
+
+        <root level="${ROOT_LOG_LEVEL}">
+            <appender-ref ref="PROD_CONSOLE"/>
+        </root>
+
+        <logger
+                name="com.hospital.gestion"
+                level="${APP_LOG_LEVEL}"/>
+
+        <logger
+                name="org.springframework.security"
+                level="WARN"/>
+
+        <logger
+                name="org.hibernate.SQL"
+                level="WARN"/>
+
+    </springProfile>
+
+</configuration>

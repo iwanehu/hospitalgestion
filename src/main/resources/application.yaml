@@ -1,0 +1,56 @@
+spring:
+  application:
+    name: gestion
+
+  profiles:
+    default: dev
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+    open-in-view: false
+    show-sql: false
+
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    schemas: public
+    default-schema: public
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+
+  data:
+    web:
+      pageable:
+        default-page-size: 20
+        max-page-size: 100
+        one-indexed-parameters: false
+
+security:
+  jwt:
+    expiration-ms: ${JWT_EXPIRATION_MS:900000}
+    issuer: ${JWT_ISSUER:hospital-api}
+
+  login:
+    max-attempts: ${LOGIN_MAX_ATTEMPTS:5}
+    attempt-window-ms: ${LOGIN_ATTEMPT_WINDOW_MS:900000}
+    block-duration-ms: ${LOGIN_BLOCK_DURATION_MS:900000}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    filter: true
+    try-it-out-enabled: true
+    persist-authorization: true
+
+  paths-to-match:
+    - /api/**

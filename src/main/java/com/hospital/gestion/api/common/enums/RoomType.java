@@ -1,0 +1,42 @@
+package com.hospital.gestion.api.common.enums;
+
+public enum RoomType {
+    // EMERGENCY
+    EMERGENCY_OBSERVATION,
+    EMERGENCY_ISOLATION,
+
+    // CARDIOLOGY
+    CARDIOLOGY_ROOM,
+    CARDIOLOGY_ICU,
+
+    // PEDIATRICS
+    PEDIATRIC_ROOM,
+    PEDIATRIC_ICU,
+
+    // RADIOLOGY (no son habitaciones de ingreso, pero sí salas)
+    RADIOLOGY_PROCEDURE_ROOM,
+    MRI_ROOM,
+    CT_ROOM,
+
+    // SURGERY
+    SURGERY_PREOP,
+    SURGERY_POSTOP_RECOVERY, // REA
+    SURGERY_ISOLATION,
+
+    // INTERNAL MEDICINE
+    INTERNAL_MEDICINE_ROOM,
+
+    // LABORATORY
+    LABORATORY_PROCEDURE_ROOM,
+
+    // TRAUMATOLOGY
+    TRAUMATOLOGY_ROOM,
+    TRAUMATOLOGY_ICU,
+
+    // GENERALES
+    INDIVIDUAL,
+    DOUBLE,
+    SHARED,
+    ISOLATION,
+
+}

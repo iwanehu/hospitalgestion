@@ -1,0 +1,26 @@
+package com.hospital.gestion.api.common.enums;
+
+public enum Specialty {
+    EMERGENCY_MEDICINE,
+    CARDIOLOGY,
+    PEDIATRICS,
+    RADIOLOGY,
+    LABORATORY,
+
+    //SURGERY
+    GENERAL_SURGERY,
+    NEUROSURGERY,
+    CARDIAC_SURGERY,
+    PLASTIC_SURGERY,
+
+    //INTERNAL_MEDICINE
+    INTERNAL_MEDICINE,
+
+    //LABORATOTY
+    CLINICAL_PATHOLOGY,
+    MICROBIOLOGY,
+
+    //TRAUMATOLOGY
+    TRAUMATOLOGY
+
+}

@@ -1,0 +1,107 @@
+services:
+  postgres:
+    image: postgres:18.4-alpine
+    container_name: hospital-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-hospital}
+      POSTGRES_USER: ${DB_USERNAME:-hospital}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+
+    volumes:
+      - hospital_postgres_data:/var/lib/postgresql
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          pg_isready
+          -U ${DB_USERNAME:-hospital}
+          -d ${POSTGRES_DB:-hospital}
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+    networks:
+      - hospital-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: hospital-api
+    restart: unless-stopped
+
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: 8080
+
+      # PostgreSQL
+      DB_URL: >-
+        jdbc:postgresql://postgres:5432/${POSTGRES_DB:-hospital}?currentSchema=public
+      DB_USERNAME: ${DB_USERNAME:-hospital}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+
+      # Connection pool
+      DB_POOL_MIN_SIZE: ${DB_POOL_MIN_SIZE:-2}
+      DB_POOL_MAX_SIZE: ${DB_POOL_MAX_SIZE:-10}
+      DB_CONNECTION_TIMEOUT_MS: ${DB_CONNECTION_TIMEOUT_MS:-30000}
+      DB_IDLE_TIMEOUT_MS: ${DB_IDLE_TIMEOUT_MS:-600000}
+      DB_MAX_LIFETIME_MS: ${DB_MAX_LIFETIME_MS:-1800000}
+
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-900000}
+      JWT_ISSUER: ${JWT_ISSUER:-hospital-api}
+
+      # CORS
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?CORS_ALLOWED_ORIGINS is required}
+
+      # Login protection
+      LOGIN_MAX_ATTEMPTS: ${LOGIN_MAX_ATTEMPTS:-5}
+      LOGIN_ATTEMPT_WINDOW_MS: ${LOGIN_ATTEMPT_WINDOW_MS:-900000}
+      LOGIN_BLOCK_DURATION_MS: ${LOGIN_BLOCK_DURATION_MS:-900000}
+
+      # Initial administrator
+      BOOTSTRAP_ADMIN_ENABLED: ${BOOTSTRAP_ADMIN_ENABLED:-false}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+      BOOTSTRAP_ADMIN_DOCUMENT_ID: ${BOOTSTRAP_ADMIN_DOCUMENT_ID:-}
+      BOOTSTRAP_ADMIN_FIRST_NAME: ${BOOTSTRAP_ADMIN_FIRST_NAME:-}
+      BOOTSTRAP_ADMIN_LAST_NAME: ${BOOTSTRAP_ADMIN_LAST_NAME:-}
+      BOOTSTRAP_ADMIN_PHONE: ${BOOTSTRAP_ADMIN_PHONE:-}
+
+      # Logging
+      ROOT_LOG_LEVEL: ${ROOT_LOG_LEVEL:-INFO}
+      APP_LOG_LEVEL: ${APP_LOG_LEVEL:-INFO}
+
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 8080
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+    networks:
+      - hospital-network
+
+volumes:
+  hospital_postgres_data:
+    name: hospital-postgres-data
+
+networks:
+  hospital-network:
+    name: hospital-network
+    driver: bridge

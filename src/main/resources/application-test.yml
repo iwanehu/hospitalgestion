@@ -1,0 +1,37 @@
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+    open-in-view: false
+    show-sql: false
+
+  flyway:
+    enabled: true
+    clean-disabled: false
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
+    expiration-ms: ${JWT_EXPIRATION_MS:900000}
+    issuer: ${JWT_ISSUER:hospital-integration-test}
+
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+springdoc:
+  api-docs:
+    enabled: false
+
+  swagger-ui:
+    enabled: false
+
+logging:
+  level:
+    root: WARN
+    com.hospital.gestion: INFO
+    org.testcontainers: INFO
