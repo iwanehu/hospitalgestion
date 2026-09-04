@@ -52,3 +52,11 @@ export const departmentTypeLabels:
   phoneExtension: string
   description: string
 }
+
+
+export interface UpdateDepartmentRequest {
+  location: string
+  phoneExtension: string
+  description: string
+  isActive: boolean
+}

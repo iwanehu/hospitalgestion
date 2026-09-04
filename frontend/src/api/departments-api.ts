@@ -3,8 +3,13 @@ import type {
   CreateDepartmentRequest,
   Department,
   DepartmentFilters,
+  UpdateDepartmentRequest,
 } from '../types/department'
 import type { PageResponse } from '../types/pagination'
+
+
+
+
 
 
 
@@ -53,4 +58,25 @@ export async function createDepartment(
   )
 
   return response.data
+}
+
+
+export async function updateDepartment(
+  id: number,
+  request: UpdateDepartmentRequest,
+): Promise<Department> {
+  const response = await http.put<Department>(
+    `/departments/${id}`,
+    request,
+  )
+
+  return response.data
+}
+
+
+
+export async function deleteDepartment(
+  id: number,
+): Promise<void> {
+  await http.delete(`/departments/${id}`)
 }
