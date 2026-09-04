@@ -11,20 +11,39 @@
 	<groupId>com.hospital</groupId>
 	<artifactId>gestion</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
+	<name>Hospital Management API</name>
+
+	<description>
+		Production-ready REST API for hospital management
+		built with Spring Boot, PostgreSQL, JWT, Flyway,
+		Testcontainers and Docker.
+	</description>
+
+	<url>
+		https://github.com/iwanehu/hospitalgestion
+	</url>
+
 	<developers>
-		<developer/>
+		<developer>
+			<name>iwanehu</name>
+			<url>https://github.com/iwanehu</url>
+		</developer>
 	</developers>
+
 	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
+		<connection>
+			scm:git:https://github.com/iwanehu/hospitalgestion.git
+		</connection>
+
+		<developerConnection>
+			scm:git:ssh://git@github.com/iwanehu/hospitalgestion.git
+		</developerConnection>
+
+		<tag>HEAD</tag>
+
+		<url>
+			https://github.com/iwanehu/hospitalgestion
+		</url>
 	</scm>
 
 
