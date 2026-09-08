@@ -18,8 +18,10 @@ import {
 } from 'lucide-react'
 
 import { DeleteWardModal } from '../components/DeleteWardModal'
-import { useState } from 'react'
+import { DeleteRoomModal } from '../components/DeleteRoomModal'
+import { useState, type ReactNode } from 'react'
 import { getActiveDepartments } from '../api/departments-api'
+import { getRooms, updateRoomStatus } from '../api/rooms-api'
 import {
   activateWard,
   deactivateWard,
@@ -27,11 +29,20 @@ import {
 } from '../api/wards-api'
 import { useAuth } from '../auth/useAuth'
 import { WardFormModal } from '../components/WardFormModal'
+import { RoomFormModal } from '../components/RoomFormModal'
 import { departmentTypeLabels } from '../types/department'
 import type {
   Ward,
   WardFilters,
 } from '../types/ward'
+import {
+  roomStatusLabels,
+  roomTypeLabels,
+  type Room,
+  type RoomFilters,
+  type RoomStatus,
+  type RoomType,
+} from '../types/room'
 
 type FacilityTab = 'wards' | 'rooms' | 'beds'
 
@@ -98,10 +109,10 @@ export function FacilitiesPage() {
         })}
       </nav>
 
-      {activeTab === 'wards' ? (
-        <WardsPanel />
-      ) : (
-        <PendingFacilityPanel type={activeTab} />
+      {activeTab === 'wards' && <WardsPanel />}
+      {activeTab === 'rooms' && <RoomsPanel />}
+      {activeTab === 'beds' && (
+        <PendingFacilityPanel type="beds" />
       )}
     </div>
   )
@@ -584,6 +595,152 @@ function WardsPanel() {
       )}
     </section>
   )
+}
+
+const roomTypes = Object.keys(roomTypeLabels) as RoomType[]
+const roomStatuses = Object.keys(roomStatusLabels) as RoomStatus[]
+
+function RoomsPanel() {
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+  const isAdmin = user?.role === 'ADMIN'
+  const canChangeStatus = isAdmin || user?.role === 'NURSE'
+  const [page, setPage] = useState(0)
+  const [number, setNumber] = useState('')
+  const [searchNumber, setSearchNumber] = useState('')
+  const [wardId, setWardId] = useState<number | undefined>()
+  const [roomType, setRoomType] = useState<RoomType | undefined>()
+  const [status, setStatus] = useState<RoomStatus | undefined>()
+  const [formOpen, setFormOpen] = useState(false)
+  const [selectedRoom, setSelectedRoom] = useState<Room | undefined>()
+  const [roomToDelete, setRoomToDelete] = useState<Room | null>(null)
+
+  const filters: RoomFilters = {
+    page,
+    size: 10,
+    number: searchNumber || undefined,
+    wardId,
+    roomType,
+    status,
+  }
+
+  const wardsQuery = useQuery({
+    queryKey: ['wards', 'active-room-filter'],
+    queryFn: () => getWards({ page: 0, size: 100, isActive: true }),
+  })
+
+  const roomsQuery = useQuery({
+    queryKey: ['rooms', filters],
+    queryFn: () => getRooms(filters),
+    placeholderData: keepPreviousData,
+  })
+
+  const statusMutation = useMutation({
+    mutationFn: ({ room, nextStatus }: { room: Room; nextStatus: RoomStatus }) =>
+      updateRoomStatus(room.id, nextStatus, room.notes ?? undefined),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['rooms'] })
+    },
+  })
+
+  const data = roomsQuery.data
+  const closeForm = () => {
+    setFormOpen(false)
+    setSelectedRoom(undefined)
+  }
+
+  return (
+    <section>
+      <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div>
+          <h3 className="text-xl font-semibold text-slate-950">Habitaciones</h3>
+          <p className="mt-1 text-sm text-slate-500">Gestiona las habitaciones asociadas a cada sala.</p>
+        </div>
+        {isAdmin && (
+          <button type="button" onClick={() => { setSelectedRoom(undefined); setFormOpen(true) }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-700 px-4 py-3 text-sm font-medium text-white hover:bg-cyan-800">
+            <Plus className="size-5" /> Nueva habitación
+          </button>
+        )}
+      </div>
+
+      <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <label className="block">
+            <span className="mb-2 block text-sm font-medium text-slate-700">Número</span>
+            <div className="flex gap-2">
+              <input value={number} onChange={(e) => setNumber(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { setPage(0); setSearchNumber(number.trim()) } }} placeholder="Buscar por número" className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none focus:border-cyan-600" />
+              <button type="button" onClick={() => { setPage(0); setSearchNumber(number.trim()) }} aria-label="Buscar habitación" className="rounded-xl bg-slate-900 px-4 text-white"><Search className="size-5" /></button>
+            </div>
+          </label>
+          <FilterSelect label="Sala" value={wardId ?? ''} onChange={(value) => { setWardId(value ? Number(value) : undefined); setPage(0) }}>
+            <option value="">Todas</option>
+            {wardsQuery.data?.content.map((ward) => <option key={ward.id} value={ward.id}>{ward.name}</option>)}
+          </FilterSelect>
+          <FilterSelect label="Tipo" value={roomType ?? ''} onChange={(value) => { setRoomType((value || undefined) as RoomType | undefined); setPage(0) }}>
+            <option value="">Todos</option>
+            {roomTypes.map((type) => <option key={type} value={type}>{roomTypeLabels[type]}</option>)}
+          </FilterSelect>
+          <FilterSelect label="Estado" value={status ?? ''} onChange={(value) => { setStatus((value || undefined) as RoomStatus | undefined); setPage(0) }}>
+            <option value="">Todos</option>
+            {roomStatuses.map((item) => <option key={item} value={item}>{roomStatusLabels[item]}</option>)}
+          </FilterSelect>
+        </div>
+        <button type="button" onClick={() => { setNumber(''); setSearchNumber(''); setWardId(undefined); setRoomType(undefined); setStatus(undefined); setPage(0) }} className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-cyan-700"><RefreshCw className="size-4" /> Limpiar filtros</button>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <header className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+          <div><p className="font-medium text-slate-900">Listado de habitaciones</p><p className="text-sm text-slate-500">{data ? `${data.totalElements} ${data.totalElements === 1 ? 'resultado' : 'resultados'}` : 'Cargando resultados'}</p></div>
+          <DoorOpen className="size-6 text-cyan-700" />
+        </header>
+
+        {roomsQuery.isPending && <div className="space-y-3 p-6">{[1, 2, 3].map((item) => <div key={item} className="h-14 animate-pulse rounded-xl bg-slate-100" />)}</div>}
+        {roomsQuery.isError && <div className="p-10 text-center text-red-700">No se pudieron cargar las habitaciones.</div>}
+        {data && !data.empty && (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1050px] text-left">
+                <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><tr><th className="px-5 py-4">Habitación</th><th className="px-5 py-4">Sala</th><th className="px-5 py-4">Planta</th><th className="px-5 py-4">Tipo</th><th className="px-5 py-4">Camas</th><th className="px-5 py-4">Estado</th>{(isAdmin || canChangeStatus) && <th className="px-5 py-4 text-right">Acciones</th>}</tr></thead>
+                <tbody className="divide-y divide-slate-100">
+                  {data.content.map((room) => (
+                    <tr key={room.id} className="hover:bg-slate-50">
+                      <td className="px-5 py-4"><p className="font-medium text-slate-900">{room.number}</p><p className="mt-1 max-w-xs truncate text-sm text-slate-500">{room.notes || 'Sin notas'}</p></td>
+                      <td className="px-5 py-4 text-sm text-slate-600">{room.wardName}</td>
+                      <td className="px-5 py-4 text-sm text-slate-600">{room.floor}</td>
+                      <td className="px-5 py-4 text-sm text-slate-600">{roomTypeLabels[room.roomType]}</td>
+                      <td className="px-5 py-4 text-sm text-slate-600">{room.totalBeds}/{room.capacity}</td>
+                      <td className="px-5 py-4">
+                        {canChangeStatus ? (
+                          <select value={room.status} disabled={statusMutation.isPending} onChange={(e) => statusMutation.mutate({ room, nextStatus: e.target.value as RoomStatus })} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-700">
+                            {roomStatuses.map((item) => <option key={item} value={item}>{roomStatusLabels[item]}</option>)}
+                          </select>
+                        ) : <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-700">{roomStatusLabels[room.status]}</span>}
+                      </td>
+                      {(isAdmin || canChangeStatus) && (
+                        <td className="px-5 py-4"><div className="flex justify-end gap-2">
+                          {isAdmin && <button type="button" onClick={() => { setSelectedRoom(room); setFormOpen(true) }} aria-label={`Editar ${room.number}`} className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:border-cyan-300 hover:text-cyan-700"><Pencil className="size-4" /></button>}
+                          {isAdmin && <button type="button" onClick={() => setRoomToDelete(room)} aria-label={`Eliminar ${room.number}`} className="rounded-lg border border-red-200 p-2 text-red-600 hover:bg-red-50"><Trash2 className="size-4" /></button>}
+                        </div></td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <footer className="flex items-center justify-between border-t border-slate-200 px-5 py-4"><p className="text-sm text-slate-500">Página {data.page + 1} de {Math.max(data.totalPages, 1)}</p><div className="flex gap-2"><button type="button" disabled={!data.hasPrevious} onClick={() => setPage((current) => current - 1)} aria-label="Página anterior" className="rounded-lg border border-slate-200 p-2 disabled:opacity-40"><ChevronLeft className="size-5" /></button><button type="button" disabled={!data.hasNext} onClick={() => setPage((current) => current + 1)} aria-label="Página siguiente" className="rounded-lg border border-slate-200 p-2 disabled:opacity-40"><ChevronRight className="size-5" /></button></div></footer>
+          </>
+        )}
+        {data?.empty && <div className="p-12 text-center"><DoorOpen className="mx-auto size-10 text-slate-300" /><p className="mt-4 font-medium text-slate-700">No se encontraron habitaciones</p><p className="mt-1 text-sm text-slate-500">Crea una habitación o modifica los filtros.</p></div>}
+      </div>
+
+      {formOpen && <RoomFormModal room={selectedRoom} onClose={closeForm} />}
+      {roomToDelete && <DeleteRoomModal room={roomToDelete} onClose={() => setRoomToDelete(null)} />}
+    </section>
+  )
+}
+
+function FilterSelect({ label, value, onChange, children }: { label: string; value: string | number; onChange: (value: string) => void; children: ReactNode }) {
+  return <label className="block"><span className="mb-2 block text-sm font-medium text-slate-700">{label}</span><select value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none focus:border-cyan-600">{children}</select></label>
 }
 
 interface PendingFacilityPanelProps {
