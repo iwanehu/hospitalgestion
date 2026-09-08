@@ -80,3 +80,14 @@ export async function deleteDepartment(
 ): Promise<void> {
   await http.delete(`/departments/${id}`)
 }
+
+
+export async function getActiveDepartments(): Promise<
+  Department[]
+> {
+  const response = await http.get<Department[]>(
+    '/departments/active/ordered',
+  )
+
+  return response.data
+}

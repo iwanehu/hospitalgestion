@@ -11,6 +11,9 @@ import { DepartmentsPage } from './pages/DepartmentsPage'
 import { LoginPage } from './pages/LoginPage'
 import { ProtectedRoute } from './routes/ProtectedRoute'
 
+
+import { FacilitiesPage } from './pages/FacilitiesPage'
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -38,12 +41,10 @@ export default function App() {
               }
             />
 
-            <Route
-              path="facilities"
-              element={
-                <ComingSoonPage title="Habitaciones y camas" />
-              }
-            />
+             <Route
+            path="facilities"
+            element={<FacilitiesPage />}
+          />
 
             <Route
               path="admissions"
