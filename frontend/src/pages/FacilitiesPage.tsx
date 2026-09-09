@@ -19,9 +19,11 @@ import {
 
 import { DeleteWardModal } from '../components/DeleteWardModal'
 import { DeleteRoomModal } from '../components/DeleteRoomModal'
+import { DeleteBedModal } from '../components/DeleteBedModal'
 import { useState, type ReactNode } from 'react'
 import { getActiveDepartments } from '../api/departments-api'
 import { getRooms, updateRoomStatus } from '../api/rooms-api'
+import { getBeds, performBedAction } from '../api/beds-api'
 import {
   activateWard,
   deactivateWard,
@@ -30,6 +32,7 @@ import {
 import { useAuth } from '../auth/useAuth'
 import { WardFormModal } from '../components/WardFormModal'
 import { RoomFormModal } from '../components/RoomFormModal'
+import { BedFormModal } from '../components/BedFormModal'
 import { departmentTypeLabels } from '../types/department'
 import type {
   Ward,
@@ -43,6 +46,13 @@ import {
   type RoomStatus,
   type RoomType,
 } from '../types/room'
+import {
+  bedStatusLabels,
+  type Bed,
+  type BedAction,
+  type BedFilters,
+  type BedStatus,
+} from '../types/bed'
 
 type FacilityTab = 'wards' | 'rooms' | 'beds'
 
@@ -111,9 +121,7 @@ export function FacilitiesPage() {
 
       {activeTab === 'wards' && <WardsPanel />}
       {activeTab === 'rooms' && <RoomsPanel />}
-      {activeTab === 'beds' && (
-        <PendingFacilityPanel type="beds" />
-      )}
+      {activeTab === 'beds' && <BedsPanel />}
     </div>
   )
 }
@@ -743,28 +751,101 @@ function FilterSelect({ label, value, onChange, children }: { label: string; val
   return <label className="block"><span className="mb-2 block text-sm font-medium text-slate-700">{label}</span><select value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none focus:border-cyan-600">{children}</select></label>
 }
 
-interface PendingFacilityPanelProps {
-  type: Exclude<FacilityTab, 'wards'>
+const bedStatuses = Object.keys(bedStatusLabels) as BedStatus[]
+const bedActionLabels: Record<BedAction, string> = {
+  reserve: 'Reservar',
+  occupy: 'Ocupar',
+  release: 'Liberar',
+  'finish-cleaning': 'Finalizar limpieza',
+  maintenance: 'Enviar a mantenimiento',
+  'finish-maintenance': 'Finalizar mantenimiento',
+  'cancel-reservation': 'Cancelar reserva',
 }
 
-function PendingFacilityPanel({
-  type,
-}: PendingFacilityPanelProps) {
-  const rooms = type === 'rooms'
-  const Icon = rooms ? DoorOpen : BedDouble
+function allowedBedActions(status: BedStatus, role?: string): BedAction[] {
+  const admin = role === 'ADMIN'
+  const nurse = role === 'NURSE'
+  const receptionist = role === 'RECEPTIONIST'
+  if (status === 'AVAILABLE') {
+    return [
+      ...(admin || nurse || receptionist ? ['reserve' as const] : []),
+      ...(admin ? ['occupy' as const] : []),
+      ...(admin || nurse ? ['maintenance' as const] : []),
+    ]
+  }
+  if (status === 'RESERVED') {
+    return [
+      ...(admin ? ['occupy' as const] : []),
+      ...(admin || nurse || receptionist ? ['cancel-reservation' as const] : []),
+    ]
+  }
+  if (status === 'OCCUPIED') {
+    return admin ? ['release'] : []
+  }
+  if (status === 'CLEANING') {
+    return admin || nurse
+      ? ['finish-cleaning', 'maintenance']
+      : []
+  }
+  return admin || nurse ? ['finish-maintenance'] : []
+}
+
+function BedsPanel() {
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+  const isAdmin = user?.role === 'ADMIN'
+  const [page, setPage] = useState(0)
+  const [number, setNumber] = useState('')
+  const [searchNumber, setSearchNumber] = useState('')
+  const [roomId, setRoomId] = useState<number | undefined>()
+  const [status, setStatus] = useState<BedStatus | undefined>()
+  const [formOpen, setFormOpen] = useState(false)
+  const [selectedBed, setSelectedBed] = useState<Bed | undefined>()
+  const [bedToDelete, setBedToDelete] = useState<Bed | null>(null)
+
+  const filters: BedFilters = { page, size: 10, bedNumber: searchNumber || undefined, roomId, status }
+  const roomsQuery = useQuery({ queryKey: ['rooms', 'bed-filter'], queryFn: () => getRooms({ page: 0, size: 100 }) })
+  const bedsQuery = useQuery({ queryKey: ['beds', filters], queryFn: () => getBeds(filters), placeholderData: keepPreviousData })
+  const actionMutation = useMutation({
+    mutationFn: ({ bed, action }: { bed: Bed; action: BedAction }) => performBedAction(bed.id, action),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['beds'] }),
+        queryClient.invalidateQueries({ queryKey: ['rooms'] }),
+      ])
+    },
+  })
+  const data = bedsQuery.data
+  const closeForm = () => { setFormOpen(false); setSelectedBed(undefined) }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-sm">
-      <Icon className="mx-auto size-12 text-slate-300" />
+    <section>
+      <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div><h3 className="text-xl font-semibold text-slate-950">Camas hospitalarias</h3><p className="mt-1 text-sm text-slate-500">Controla disponibilidad, reservas, ocupación y mantenimiento.</p></div>
+        {isAdmin && <button type="button" onClick={() => { setSelectedBed(undefined); setFormOpen(true) }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-700 px-4 py-3 text-sm font-medium text-white hover:bg-cyan-800"><Plus className="size-5" /> Nueva cama</button>}
+      </div>
 
-      <h3 className="mt-5 text-xl font-semibold text-slate-900">
-        {rooms ? 'Habitaciones' : 'Camas'}
-      </h3>
+      <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="grid gap-4 md:grid-cols-3">
+          <label className="block"><span className="mb-2 block text-sm font-medium text-slate-700">Número</span><div className="flex gap-2"><input value={number} onChange={(e) => setNumber(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { setPage(0); setSearchNumber(number.trim()) } }} placeholder="Buscar por número" className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none focus:border-cyan-600" /><button type="button" onClick={() => { setPage(0); setSearchNumber(number.trim()) }} aria-label="Buscar cama" className="rounded-xl bg-slate-900 px-4 text-white"><Search className="size-5" /></button></div></label>
+          <FilterSelect label="Habitación" value={roomId ?? ''} onChange={(value) => { setRoomId(value ? Number(value) : undefined); setPage(0) }}><option value="">Todas</option>{roomsQuery.data?.content.map((room) => <option key={room.id} value={room.id}>{room.number} · {room.wardName}</option>)}</FilterSelect>
+          <FilterSelect label="Estado" value={status ?? ''} onChange={(value) => { setStatus((value || undefined) as BedStatus | undefined); setPage(0) }}><option value="">Todos</option>{bedStatuses.map((item) => <option key={item} value={item}>{bedStatusLabels[item]}</option>)}</FilterSelect>
+        </div>
+        <button type="button" onClick={() => { setNumber(''); setSearchNumber(''); setRoomId(undefined); setStatus(undefined); setPage(0) }} className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-cyan-700"><RefreshCw className="size-4" /> Limpiar filtros</button>
+      </div>
 
-      <p className="mt-2 text-slate-500">
-        Este módulo se habilitará después de configurar las
-        salas hospitalarias.
-      </p>
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <header className="flex items-center justify-between border-b border-slate-200 px-5 py-4"><div><p className="font-medium text-slate-900">Listado de camas</p><p className="text-sm text-slate-500">{data ? `${data.totalElements} ${data.totalElements === 1 ? 'resultado' : 'resultados'}` : 'Cargando resultados'}</p></div><BedDouble className="size-6 text-cyan-700" /></header>
+        {bedsQuery.isPending && <div className="space-y-3 p-6">{[1, 2, 3].map((item) => <div key={item} className="h-14 animate-pulse rounded-xl bg-slate-100" />)}</div>}
+        {bedsQuery.isError && <div className="p-10 text-center text-red-700">No se pudieron cargar las camas.</div>}
+        {data && !data.empty && <><div className="overflow-x-auto"><table className="w-full min-w-[1050px] text-left"><thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><tr><th className="px-5 py-4">Cama</th><th className="px-5 py-4">Habitación</th><th className="px-5 py-4">Sala</th><th className="px-5 py-4">Planta</th><th className="px-5 py-4">Estado</th><th className="px-5 py-4 text-right">Acciones</th></tr></thead><tbody className="divide-y divide-slate-100">{data.content.map((bed) => {
+          const actions = allowedBedActions(bed.status, user?.role)
+          return <tr key={bed.id} className="hover:bg-slate-50"><td className="px-5 py-4"><p className="font-medium text-slate-900">{bed.bedNumber}</p><p className="mt-1 max-w-xs truncate text-sm text-slate-500">{bed.notes || 'Sin notas'}</p></td><td className="px-5 py-4 text-sm text-slate-600">{bed.roomNumber}</td><td className="px-5 py-4 text-sm text-slate-600">{bed.wardName}</td><td className="px-5 py-4 text-sm text-slate-600">{bed.roomFloor}</td><td className="px-5 py-4"><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{bedStatusLabels[bed.status]}</span></td><td className="px-5 py-4"><div className="flex justify-end gap-2">{actions.length > 0 && <select defaultValue="" disabled={actionMutation.isPending} onChange={(e) => { const action = e.target.value as BedAction; if (action) actionMutation.mutate({ bed, action }); e.target.value = '' }} className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs text-slate-700"><option value="" disabled>Cambiar estado</option>{actions.map((action) => <option key={action} value={action}>{bedActionLabels[action]}</option>)}</select>}{isAdmin && <button type="button" onClick={() => { setSelectedBed(bed); setFormOpen(true) }} aria-label={`Editar ${bed.bedNumber}`} className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:text-cyan-700"><Pencil className="size-4" /></button>}{isAdmin && <button type="button" onClick={() => setBedToDelete(bed)} aria-label={`Eliminar ${bed.bedNumber}`} className="rounded-lg border border-red-200 p-2 text-red-600 hover:bg-red-50"><Trash2 className="size-4" /></button>}</div></td></tr>
+        })}</tbody></table></div><footer className="flex items-center justify-between border-t border-slate-200 px-5 py-4"><p className="text-sm text-slate-500">Página {data.page + 1} de {Math.max(data.totalPages, 1)}</p><div className="flex gap-2"><button type="button" disabled={!data.hasPrevious} onClick={() => setPage((current) => current - 1)} aria-label="Página anterior" className="rounded-lg border border-slate-200 p-2 disabled:opacity-40"><ChevronLeft className="size-5" /></button><button type="button" disabled={!data.hasNext} onClick={() => setPage((current) => current + 1)} aria-label="Página siguiente" className="rounded-lg border border-slate-200 p-2 disabled:opacity-40"><ChevronRight className="size-5" /></button></div></footer></>}
+        {data?.empty && <div className="p-12 text-center"><BedDouble className="mx-auto size-10 text-slate-300" /><p className="mt-4 font-medium text-slate-700">No se encontraron camas</p><p className="mt-1 text-sm text-slate-500">Crea una cama o modifica los filtros.</p></div>}
+      </div>
+      {formOpen && <BedFormModal bed={selectedBed} onClose={closeForm} />}
+      {bedToDelete && <DeleteBedModal bed={bedToDelete} onClose={() => setBedToDelete(null)} />}
     </section>
   )
 }
