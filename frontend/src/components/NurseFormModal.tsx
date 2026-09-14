@@ -23,6 +23,9 @@ import {
   type ShiftType,
 } from '../types/staff'
 
+
+import { getDepartmentLabel } from '../utils/department-label'
+
 interface Props {
   nurse?: Nurse
   onClose: () => void
@@ -325,8 +328,8 @@ export function NurseFormModal({
                     key={department.id}
                     value={department.id}
                   >
-                    {department.departmentType} ·{' '}
-                    {department.location}
+                    {getDepartmentLabel(department.departmentType)} ·{' '}
+{department.location}
                   </option>
                 ))}
               </select>

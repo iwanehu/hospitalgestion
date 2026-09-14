@@ -21,6 +21,8 @@ import {
   type Specialty,
 } from '../types/staff'
 
+import { getDepartmentLabel } from '../utils/department-label'
+
 interface Props {
   doctor?: Doctor
   onClose: () => void
@@ -255,8 +257,8 @@ export function DoctorFormModal({
                     key={department.id}
                     value={department.id}
                   >
-                    {department.departmentType} ·{' '}
-                    {department.location}
+                    {getDepartmentLabel(department.departmentType)} ·{' '}
+{department.location}
                   </option>
                 ))}
               </select>

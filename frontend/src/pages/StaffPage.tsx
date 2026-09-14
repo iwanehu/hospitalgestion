@@ -37,6 +37,10 @@ import {
   type Specialty,
 } from '../types/staff'
 
+
+
+import { getDepartmentLabel } from '../utils/department-label'
+
 type StaffTab = 'doctors' | 'nurses'
 
 const doctorSpecialties = Object.keys(
@@ -297,7 +301,7 @@ export function StaffPage() {
                         key={department.id}
                         value={department.id}
                       >
-                        {department.departmentType} ·{' '}
+                        {getDepartmentLabel(department.departmentType)} ·{' '}
                         {department.location}
                       </option>
                     ),
@@ -408,7 +412,7 @@ export function StaffPage() {
                               </td>
 
                               <td className="px-5 py-4 text-sm text-slate-600">
-                                {doctor.departmentType}
+                              {getDepartmentLabel(doctor.departmentType)}
                               </td>
 
                               <td className="px-5 py-4 text-sm text-slate-600">
@@ -583,7 +587,7 @@ export function StaffPage() {
                       key={department.id}
                       value={department.id}
                     >
-                      {department.departmentType} ·{' '}
+                      {getDepartmentLabel(department.departmentType)} ·{' '}
                       {department.location}
                     </option>
                   ),
@@ -728,7 +732,7 @@ export function StaffPage() {
                               </td>
 
                               <td className="px-5 py-4 text-sm text-slate-600">
-                                {nurse.departmentType}
+                                {getDepartmentLabel(nurse.departmentType)}
                               </td>
 
                               <td className="px-5 py-4 text-sm text-slate-600">

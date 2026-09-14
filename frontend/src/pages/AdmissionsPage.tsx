@@ -31,6 +31,9 @@ import {
   type AdmissionStatus,
 } from '../types/admission'
 
+
+import { getDepartmentLabel } from '../utils/department-label'
+
 const statuses = Object.keys(
   admissionStatusLabels,
 ) as AdmissionStatus[]
@@ -358,10 +361,8 @@ export function AdmissionsPage() {
                               </p>
 
                               <p className="mt-1 text-xs text-slate-500">
-                                {admission.wardName} ·{' '}
-                                {
-                                  admission.departmentType
-                                }
+                               {admission.wardName} ·{' '}
+{getDepartmentLabel(admission.departmentType)}
                               </p>
                             </div>
                           </div>
