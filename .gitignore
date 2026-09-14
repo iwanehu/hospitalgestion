@@ -43,3 +43,9 @@ application-local.yaml
 application-local.properties
 
 
+.git
+.github
+.vscode
+target
+frontend
+*.log
