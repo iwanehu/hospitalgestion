@@ -47,5 +47,4 @@ application-local.properties
 .github
 .vscode
 target
-frontend
 *.log
