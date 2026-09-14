@@ -16,6 +16,8 @@ import { PatientsPage } from './pages/PatientsPage'
 
 import { FacilitiesPage } from './pages/FacilitiesPage'
 
+import { StaffPage } from './pages/StaffPage'
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -36,11 +38,9 @@ export default function App() {
               element={<PatientsPage />}
             />
 
-            <Route
+                      <Route
               path="staff"
-              element={
-                <ComingSoonPage title="Personal sanitario" />
-              }
+              element={<StaffPage />}
             />
 
              <Route
