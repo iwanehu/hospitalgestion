@@ -18,6 +18,8 @@ import { FacilitiesPage } from './pages/FacilitiesPage'
 
 import { StaffPage } from './pages/StaffPage'
 
+import { AdmissionsPage } from './pages/AdmissionsPage'
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -48,12 +50,10 @@ export default function App() {
             element={<FacilitiesPage />}
           />
 
-            <Route
-              path="admissions"
-              element={
-                <ComingSoonPage title="Admisiones" />
-              }
-            />
+           <Route
+            path="admissions"
+            element={<AdmissionsPage />}
+          />
 
             <Route
               path="appointments"
