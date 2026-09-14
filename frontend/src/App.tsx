@@ -5,7 +5,6 @@ import {
   Routes,
 } from 'react-router-dom'
 import { AppLayout } from './layouts/AppLayout'
-import { ComingSoonPage } from './pages/ComingSoonPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { DepartmentsPage } from './pages/DepartmentsPage'
 import { LoginPage } from './pages/LoginPage'
@@ -19,6 +18,10 @@ import { FacilitiesPage } from './pages/FacilitiesPage'
 import { StaffPage } from './pages/StaffPage'
 
 import { AdmissionsPage } from './pages/AdmissionsPage'
+
+
+
+import { AppointmentsPage } from './pages/AppointmentsPage'
 
 export default function App() {
   return (
@@ -55,10 +58,10 @@ export default function App() {
             element={<AdmissionsPage />}
           />
 
-            <Route
-              path="appointments"
-              element={<ComingSoonPage title="Citas" />}
-            />
+           <Route
+  path="appointments"
+  element={<AppointmentsPage />}
+/>
           </Route>
         </Route>
 
