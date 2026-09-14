@@ -11,6 +11,8 @@ import { DepartmentsPage } from './pages/DepartmentsPage'
 import { LoginPage } from './pages/LoginPage'
 import { ProtectedRoute } from './routes/ProtectedRoute'
 
+import { PatientsPage } from './pages/PatientsPage'
+
 
 import { FacilitiesPage } from './pages/FacilitiesPage'
 
@@ -31,7 +33,7 @@ export default function App() {
 
             <Route
               path="patients"
-              element={<ComingSoonPage title="Pacientes" />}
+              element={<PatientsPage />}
             />
 
             <Route
@@ -61,6 +63,7 @@ export default function App() {
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
+        
       </Routes>
     </BrowserRouter>
   )
