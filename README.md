@@ -4,6 +4,17 @@ REST API for hospital management built with Java, Spring Boot and PostgreSQL.
 
 The system manages users, administrators, patients, doctors, nurses, receptionists, departments, wards, rooms, beds, admissions and medical appointments.
 
+## 🌐 Live Demo
+
+### Frontend
+https://164-132-187-235.sslip.io/login
+
+### API Documentation
+https://164-132-187-235.sslip.io/swagger-ui/index.html
+
+### OpenAPI
+https://164-132-187-235.sslip.io/v3/api-docs
+
 ## Main features
 
 - Stateless authentication with JWT.
